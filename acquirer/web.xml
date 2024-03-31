@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+         version="2.5">
+
+    <context-param>
+        <description>Key Password</description>
+        <param-name>key_password</param-name>
+        <param-value>@key-password@</param-value>
+    </context-param>
+
+    <context-param>
+        <description>Acquirer EE Certificate</description>
+        <param-name>acquirer_eecert</param-name>
+        <param-value>@acquirer-eecert@</param-value>
+    </context-param>
+
+    <context-param>
+        <description>Provider Extension JSON File</description>
+        <param-name>provider_extensions</param-name>
+        <param-value>@provider-extensions@</param-value>
+    </context-param>
+    
+    <context-param>
+        <description>Acquirer Decryption Key #1 (PUBLISHED)</description>
+        <param-name>acquirer_decryptionkey1</param-name>
+        <param-value>@acquirer-decryptionkey1@</param-value>
+    </context-param>
+
+    <context-param>
+        <description>Acquirer Decryption Key #2</description>
+        <param-name>acquirer_decryptionkey2</param-name>
+        <param-value>@acquirer-decryptionkey2@</param-value>
+    </context-param>
+ 
+    <context-param>
+        <description>Acquirer Base URL</description>
+        <param-name>acquirer_base_url</param-name>
+        <param-value>@acquirer-base-url@</param-value>
+    </context-param>
+
+    <context-param>
+        <description>Payer Interbank URL</description>
+        <param-name>payer_interbank_url</param-name>
+        <param-value>@payer-interbank-url@</param-value>
+    </context-param>
+
+    <context-param>
+        <description>Payment Network Root Certificate</description>
+        <param-name>payment_root</param-name>
+        <param-value>@payment-root@</param-value>
+    </context-param>
+   
+    <context-param>
+        <description>Payee Accounts</description>
+        <param-name>payee_account_db</param-name>
+        <param-value>@payee-account-db@</param-value>
+    </context-param>
+
+    <context-param>
+        <description>Logging</description>
+        <param-name>logging</param-name>
+        <param-value>@logging@</param-value>
+    </context-param>
+    
+    <listener>
+        <listener-class>org.webpki.saturn.acquirer.AcquirerService</listener-class>
+    </listener>
+
+    <servlet>
+        <servlet-name>HomeServlet</servlet-name>
+        <servlet-class>org.webpki.saturn.acquirer.HomeServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>ProviderAuthorityServlet</servlet-name>
+        <servlet-class>org.webpki.saturn.acquirer.ProviderAuthorityServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>PayeeAuthorityServlet</servlet-name>
+        <servlet-class>org.webpki.saturn.acquirer.PayeeAuthorityServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>TransactionServlet</servlet-name>
+        <servlet-class>org.webpki.saturn.acquirer.TransactionServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>HomeServlet</servlet-name>
+        <url-pattern>/home</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>ProviderAuthorityServlet</servlet-name>
+        <url-pattern>/authority</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PayeeAuthorityServlet</servlet-name>
+        <url-pattern>/payees/*</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>TransactionServlet</servlet-name>
+        <url-pattern>/service</url-pattern>
+    </servlet-mapping>
+
+    <security-constraint>
+      <web-resource-collection>
+        <web-resource-name>The app</web-resource-name>
+        <url-pattern>/*</url-pattern>
+      </web-resource-collection>
+      <user-data-constraint>
+        <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+      </user-data-constraint>
+    </security-constraint>
+
+</web-app>

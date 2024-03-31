@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<web-app xmlns="http://java.sun.com/xml/ns/javaee"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+         version="2.5">
+
+    <context-param>
+        <description>Key Password</description>
+        <param-name>key_password</param-name>
+        <param-value>@key-password@</param-value>
+    </context-param>
+
+    <context-param>
+        <description>Hosting Attestation Key</description>
+        <param-name>hosting_key</param-name>
+        <param-value>@hosting-key@</param-value>
+    </context-param>
+
+    <context-param>
+        <description>Hosting Base URL</description>
+        <param-name>hosting_base_url</param-name>
+        <param-value>@hosting-base-url@</param-value>
+    </context-param>
+
+    <context-param>
+        <description>Provider Base URL</description>
+        <param-name>provider_base_url</param-name>
+        <param-value>@provider-base-url@</param-value>
+    </context-param>
+
+    <context-param>
+        <description>Merchant Accounts</description>
+        <param-name>merchant_account_db</param-name>
+        <param-value>@merchant-account-db@</param-value>
+    </context-param>
+
+    <context-param>
+        <description>Logging</description>
+        <param-name>logging</param-name>
+        <param-value>@logging@</param-value>
+    </context-param>
+    
+    <listener>
+        <listener-class>org.webpki.saturn.hosting.HostingService</listener-class>
+    </listener>
+
+    <servlet>
+        <servlet-name>HomeServlet</servlet-name>
+        <servlet-class>org.webpki.saturn.hosting.HomeServlet</servlet-class>
+    </servlet>
+
+    <servlet>
+        <servlet-name>PayeeAuthorityServlet</servlet-name>
+        <servlet-class>org.webpki.saturn.hosting.PayeeAuthorityServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>HomeServlet</servlet-name>
+        <url-pattern>/home</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>PayeeAuthorityServlet</servlet-name>
+        <url-pattern>/payees/*</url-pattern>
+    </servlet-mapping>
+
+    <security-constraint>
+      <web-resource-collection>
+        <web-resource-name>The app</web-resource-name>
+        <url-pattern>/*</url-pattern>
+      </web-resource-collection>
+      <user-data-constraint>
+        <transport-guarantee>CONFIDENTIAL</transport-guarantee>
+      </user-data-constraint>
+    </security-constraint>
+
+</web-app>

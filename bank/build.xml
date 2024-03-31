@@ -1,0 +1,190 @@
+<project name="Bank Server" default="help" basedir=".">
+
+  <!-- set properties for this build -->
+  <property name="src.dir" value="src"/>
+  <property name="conf.dir" value="conf"/>
+  <property name="dist.dir" value="dist"/>
+  <property name="temp.dir" value=".tmp"/>
+  <property name="class_war_path" value="WEB-INF/classes/org/webpki/saturn/bank"/>
+
+  <property file="../resources/common.properties"/>
+
+  <condition property="appcorename" value="${@payeebankpath}" else="${@payerbankpath}">
+    <isset property="payeebank"/>
+  </condition>
+
+  <condition property="bankhost" value="${@payeebankhost}" else="${@payerbankhost}">
+    <isset property="payeebank"/>
+  </condition>
+    
+  <condition property="users.db" value="" else="jdbc/PAYER_BANK">
+    <isset property="payeebank"/>
+  </condition>  
+  
+  <condition property="common.name" value="Big Bank" else="My Bank">
+    <isset property="payeebank"/>
+  </condition>
+
+  <condition property="internal.name" value="payeebank" else="payerbank">
+    <isset property="payeebank"/>
+  </condition>
+
+  <property name="merchants.db" value="merchants-${internal.name}.json"/>
+
+  <property name="extensions.file" value="extensions-${internal.name}.json"/>
+
+  <condition property="hosting.provider.key" value="${@hostingattestationkey}.p12" else="">
+    <and>
+      <isset property="payeebank"/>
+      <isset property="hostingoption"/>
+    </and>
+  </condition>
+
+  <property name="webroot" value="webapps"/>
+
+  <!-- Useful ommand line variables --> 
+  <property name="logging" value="false"/>
+  <property name="balancefail" value=""/>
+  <property name="balanceslow" value="false"/>
+    
+  <property name="server.port.map" value=""/>
+
+  <property name="debug" value="on"/>
+
+  <property name="javaversion" value="${ant.java.version}"/>
+  <condition property="tested.version" else="false">
+    <equals arg1="21" arg2="${javaversion}"/>
+  </condition>
+
+  <target name="_jdktest" unless="${tested.version}">
+    <echo message="&#10;
+***************************************************************&#10;
+    WARNING - This package has only been tested with Java 17!&#10;
+***************************************************************&#10;&#10;"/>
+  </target>
+
+  <property environment="env"/>
+  <condition property="catalina.home" value="${env.CATALINA_HOME}">
+    <isset property="env.CATALINA_HOME"/>
+  </condition>
+
+  <target name="help">
+      <echo message="both tomcat [-Dlogging=true] [-Dpayeebank=0] [-Dhostingoption=0]"/>
+  </target>
+
+  <target name="build">
+    <antcall target="_jdktest"/>
+    <condition property="zip.webpki.lib.dir" value="${@webpki.lib.dir}" else="empty.lib">
+      <isset property="@include.webpki.in.war"/>
+    </condition>
+    <delete dir="${temp.dir}"/>
+    <property name="bank.path" value="${appcorename}"/>
+    <property name="server.port.map" value=""/>
+    <property name="enc.key.rsa" value="${internal.name}-enc-key-rsa.p12"/>
+    <property name="enc.key.ec" value="${internal.name}-enc-key-ec.p12"/>
+    <property name="cert.key" value="${internal.name}-eecert.p12"/>
+    <fixcrlf srcdir="."
+       tab="remove"
+       tablength="4"
+       eol="lf"
+       eof="remove"
+       includes="**/*.java, **/*.xml, **/*.json"/>
+    <copy file="web.xml" todir="${temp.dir}"/>
+    <copy file="${@credentials.dir}/${merchants.db}" todir="${temp.dir}"/>
+    <javac debug="${debug}"
+           srcdir="${src.dir}:${@common.src.dir}:${@account-types.src.dir}:${@interbanking.src.dir}"
+           destdir="${temp.dir}"
+           includeAntRuntime="false">
+        <include name="org/webpki/saturn/bank/**/*.java"/>
+        <classpath>
+          <fileset dir="${@webpki.lib.dir}">
+             <include name="${@webpki-libext.jar}"/>
+          </fileset>
+          <fileset dir="${@webpki.lib.dir}">
+             <include name="${@webpki-webutil.jar}"/>
+          </fileset>
+          <fileset dir="${@reference.lib.dir}">
+             <include name="servlet-api.jar"/>
+          </fileset>
+        </classpath>
+    </javac>
+    <!-- Merchant configuration is rather demo-ish... -->
+    <replace file="${temp.dir}/${merchants.db}">
+      <replacefilter token="https://spaceshop.com" value="${@merchanthost}/${@merchantpath}"/>
+      <replacefilter token="https://planetgas.com" value="${@merchanthost}/${@merchantpath}"/>
+      <replacefilter token="https://buyerzone.com" value="${@merchanthost}/${@merchantpath}"/>
+    </replace>
+    <replace file="${temp.dir}/web.xml">
+      <replacefilter token="@server-port-map@" value="${server.port.map}"/>
+      <replacefilter token="@key-password@" value="${@keypassword}"/>
+      <replacefilter token="@bank-name@" value="${common.name}"/>
+      <replacefilter token="@hosting-provider-key@" value="${hosting.provider.key}"/>
+      <replacefilter token="@hosting-provider-url@" value="${@hostinghost}/${@hostingpath}"/>
+      <replacefilter token="@provider-extensions@" value="${extensions.file}"/>
+      <replacefilter token="@bank-eecert@" value="${cert.key}"/>
+      <replacefilter token="@bank-decryptionkey1@" value="${enc.key.ec}"/>
+      <replacefilter token="@bank-decryptionkey2@" value="${enc.key.rsa}"/>
+      <replacefilter token="@payment-root@" value="${@banknetworkroot}.cer"/>
+      <replacefilter token="@acquirer-root@" value="${@acquirernetworkroot}.cer"/>
+      <replacefilter token="@bank-base-url@" value="${bankhost}/${bank.path}"/>
+      <replacefilter token="@payer-interbank-url@" value="${@payerbankhost}/${@payerbankpath}/interbanking"/>
+      <replacefilter token="@payee-interbank-url@" value="${@payeebankhost}/${@payeebankpath}/interbanking"/>
+      <replacefilter token="@user-account-db@" value="${users.db}"/>
+      <replacefilter token="@payee-account-db@" value="${merchants.db}"/>
+      <replacefilter token="@balance-slow-test@" value="${balanceslow}"/>
+      <replacefilter token="@balance-fail-test@" value="${balancefail}"/>
+      <replacefilter token="@logging@" value="${logging}"/>
+    </replace>
+    <war destfile="${dist.dir}/${appcorename}.war" webxml="${temp.dir}/web.xml">
+      <classes dir="${temp.dir}">
+         <exclude name="web.xml"/>
+         <exclude name="${merchants.db}"/>
+      </classes>
+      <metainf dir=".">
+        <include name="context.xml"/>
+      </metainf>
+      <lib dir="${zip.webpki.lib.dir}">
+           <include name="${@webpki-libext.jar}"/>
+      </lib>
+      <lib dir="${zip.webpki.lib.dir}">
+           <include name="${@webpki-webutil.jar}"/>
+      </lib>
+      <zipfileset dir="${@key.dir}" prefix="${class_war_path}">
+         <include name="${enc.key.rsa}"/>
+         <include name="${enc.key.ec}"/>
+         <include name="${cert.key}"/>
+         <include name="${@banknetworkroot}.cer"/>
+         <include name="${@acquirernetworkroot}.cer"/>
+         <include name="${hosting.provider.key}"/>
+      </zipfileset>
+      <zipfileset dir="${temp.dir}" prefix="${class_war_path}">
+         <include name="${merchants.db}"/>
+      </zipfileset>
+      <zipfileset dir="${conf.dir}" prefix="${class_war_path}">
+         <include name="${extensions.file}"/>
+      </zipfileset>
+      <fileset dir="web"/>
+      <zipfileset dir="${conf.dir}" fullpath="images/logotype.svg">
+         <include name="logotype-${internal.name}.svg"/>
+      </zipfileset>
+    </war>
+  </target>
+  
+  <target name="both">
+      <property name="logging" value="false"/>    
+      <ant inheritAll="false" target="tomcat">
+        <property name="logging" value="${logging}"/>    
+      </ant>
+      <ant inheritAll="false" target="tomcat">
+        <property name="payeebank" value="true"/>    
+        <property name="logging" value="${logging}"/>    
+      </ant>
+  </target>
+
+  <target name="tomcat">
+    <fail message="CATALINA_HOME must be set to environment!" unless="catalina.home"/>
+    <antcall target="build"/>
+    <copy file="${dist.dir}/${appcorename}.war" todir="${catalina.home}/${webroot}" overwrite="true" preservelastmodified="true"/>
+  </target>
+   
+</project>
